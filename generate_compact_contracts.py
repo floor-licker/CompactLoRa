@@ -326,6 +326,35 @@ module Utils {
         
         return contracts
 
+    def generate_complex_contract_with_bias(self, min_complexity: int = 2, contract_type: str = "random", complexity_bias: float = 1.0) -> str:
+        """Generate a contract with minimum cyclomatic complexity and bias toward higher complexity."""
+        if contract_type == "ledger":
+            patterns = [p for p in self.ledger_patterns if self.get_pattern_complexity(p) >= min_complexity]
+        elif contract_type == "crypto":
+            patterns = [p for p in self.crypto_patterns if self.get_pattern_complexity(p) >= min_complexity]
+        else:  # random
+            all_patterns = self.ledger_patterns + self.crypto_patterns
+            patterns = [p for p in all_patterns if self.get_pattern_complexity(p) >= min_complexity]
+        
+        if not patterns:
+            raise ValueError(f"No patterns found with complexity >= {min_complexity}")
+        
+        if complexity_bias <= 1.0:
+            # No bias, use original random selection
+            pattern = random.choice(patterns)
+        else:
+            # Apply complexity bias
+            weights = []
+            for pattern in patterns:
+                complexity = self.get_pattern_complexity(pattern)
+                weight = complexity ** complexity_bias  # Exponential bias
+                weights.append(weight)
+            
+            # Weighted random selection
+            pattern = random.choices(patterns, weights=weights)[0]
+        
+        return pattern["template"]
+
 
 def main():
     """CLI interface for contract generation."""
@@ -337,6 +366,7 @@ def main():
     parser.add_argument('--list', action='store_true', help='List available patterns')
     parser.add_argument('--list-complex', action='store_true', help='List patterns with complexity info')
     parser.add_argument('--min-complexity', type=int, default=1, help='Minimum cyclomatic complexity (default: 1)')
+    parser.add_argument('--complexity-bias', type=float, default=1.0, help='Bias toward complex patterns (1.0=no bias, 2.0=quadratic bias)')
     parser.add_argument('--output', type=str, help='Output file path')
     
     args = parser.parse_args()
@@ -354,6 +384,8 @@ def main():
     print("🚀 COMPACT CONTRACT GENERATOR")
     print("=" * 40)
     print(f"🎯 Minimum Complexity: {args.min_complexity}")
+    if args.complexity_bias > 1.0:
+        print(f"📊 Complexity Bias: {args.complexity_bias}x")
     
     if args.count == 1:
         # Generate single contract
@@ -366,9 +398,9 @@ def main():
             else:
                 contract = generator.generate_random_contract()
         else:
-            # Generate with complexity filter
-            if args.min_complexity > 1:
-                contract = generator.generate_complex_contract(args.min_complexity, args.type)
+            # Generate with complexity filter and bias
+            if args.min_complexity > 1 or args.complexity_bias > 1.0:
+                contract = generator.generate_complex_contract_with_bias(args.min_complexity, args.type, args.complexity_bias)
             else:
                 if args.type == "ledger":
                     contract = generator.generate_ledger_contract()
@@ -389,8 +421,8 @@ def main():
         # Generate multiple contracts
         contracts = []
         for _ in range(args.count):
-            if args.min_complexity > 1:
-                contract = generator.generate_complex_contract(args.min_complexity, args.type)
+            if args.min_complexity > 1 or args.complexity_bias > 1.0:
+                contract = generator.generate_complex_contract_with_bias(args.min_complexity, args.type, args.complexity_bias)
             else:
                 contracts_batch = generator.generate_multiple(1, args.type)
                 contract = contracts_batch[0]
@@ -413,6 +445,8 @@ def main():
     print(f"\n🎯 Generated {args.count} valid Compact contract{'s' if args.count > 1 else ''}!")
     if args.min_complexity > 1:
         print(f"📊 All contracts have cyclomatic complexity >= {args.min_complexity}")
+    if args.complexity_bias > 1.0:
+        print(f"⚡ Applied {args.complexity_bias}x bias toward complex patterns")
 
 
 if __name__ == "__main__":

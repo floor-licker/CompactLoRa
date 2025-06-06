@@ -1,0 +1,870 @@
+// Contract 1
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger counter: Uint<64>;
+
+export circuit increment(amount: Uint<64>): [] {
+  counter = amount;
+}
+
+==================================================
+
+// Contract 2
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger counter: Uint<64>;
+export ledger max_value: Uint<64>;
+
+export circuit safe_increment(amount: Uint<64>): [] {
+  if (amount > 0) {
+    if (counter + amount <= max_value) {
+      counter = counter + amount;
+    } else {
+      counter = max_value;
+    }
+  }
+}
+
+==================================================
+
+// Contract 3
+pragma language_version >= 0.14.0;
+
+module Utils {
+  import CompactStandardLibrary;
+
+  export pure circuit safe_uint_to_field(input: Uint<64>, max_val: Uint<64>): Field {
+    if (input <= max_val) {
+      if (input > 0) {
+        const field_val: Field = input as Field;
+        return field_val;
+      } else {
+        const default_val: Field = 1 as Field;
+        return default_val;
+      }
+    } else {
+      const capped_val: Field = max_val as Field;
+      return capped_val;
+    }
+  }
+}
+
+==================================================
+
+// Contract 4
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger balance: Uint<64>;
+export ledger min_balance: Uint<64>;
+
+export circuit update_balance(new_value: Uint<64>, allow_negative: Field): [] {
+  if (allow_negative == 1) {
+    balance = new_value;
+  } else {
+    if (new_value >= min_balance) {
+      balance = new_value;
+    } else {
+      balance = min_balance;
+    }
+  }
+}
+
+==================================================
+
+// Contract 5
+pragma language_version >= 0.14.0;
+
+module Utils {
+  import CompactStandardLibrary;
+
+  export pure circuit safe_uint_to_field(input: Uint<64>, max_val: Uint<64>): Field {
+    if (input <= max_val) {
+      if (input > 0) {
+        const field_val: Field = input as Field;
+        return field_val;
+      } else {
+        const default_val: Field = 1 as Field;
+        return default_val;
+      }
+    } else {
+      const capped_val: Field = max_val as Field;
+      return capped_val;
+    }
+  }
+}
+
+==================================================
+
+// Contract 6
+pragma language_version >= 0.14.0;
+
+module KeyGen {
+  import CompactStandardLibrary;
+
+  export pure circuit safe_generate_pubkey(private_key: Field, min_key: Field): CurvePoint {
+    if (private_key >= min_key) {
+      if (private_key > 0) {
+        return ec_mul_generator(private_key);
+      } else {
+        return ec_mul_generator(min_key);
+      }
+    } else {
+      return ec_mul_generator(min_key);
+    }
+  }
+}
+
+==================================================
+
+// Contract 7
+pragma language_version >= 0.14.0;
+
+module Crypto {
+  import CompactStandardLibrary;
+
+  export pure circuit hash_bytes(input: Bytes<32>): Bytes<32> {
+    return persistent_hash<Bytes<32>>(input);
+  }
+}
+
+==================================================
+
+// Contract 8
+pragma language_version >= 0.14.0;
+
+module Utils {
+  import CompactStandardLibrary;
+
+  export pure circuit safe_uint_to_field(input: Uint<64>, max_val: Uint<64>): Field {
+    if (input <= max_val) {
+      if (input > 0) {
+        const field_val: Field = input as Field;
+        return field_val;
+      } else {
+        const default_val: Field = 1 as Field;
+        return default_val;
+      }
+    } else {
+      const capped_val: Field = max_val as Field;
+      return capped_val;
+    }
+  }
+}
+
+==================================================
+
+// Contract 9
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger counter: Uint<64>;
+
+export circuit increment(amount: Uint<64>): [] {
+  counter = amount;
+}
+
+==================================================
+
+// Contract 10
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger counter: Uint<64>;
+export ledger max_value: Uint<64>;
+
+export circuit safe_increment(amount: Uint<64>): [] {
+  if (amount > 0) {
+    if (counter + amount <= max_value) {
+      counter = counter + amount;
+    } else {
+      counter = max_value;
+    }
+  }
+}
+
+==================================================
+
+// Contract 11
+pragma language_version >= 0.14.0;
+
+module KeyGen {
+  import CompactStandardLibrary;
+
+  export pure circuit safe_generate_pubkey(private_key: Field, min_key: Field): CurvePoint {
+    if (private_key >= min_key) {
+      if (private_key > 0) {
+        return ec_mul_generator(private_key);
+      } else {
+        return ec_mul_generator(min_key);
+      }
+    } else {
+      return ec_mul_generator(min_key);
+    }
+  }
+}
+
+==================================================
+
+// Contract 12
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger balance: Uint<64>;
+
+export circuit set(new_value: Uint<64>): [] {
+  balance = new_value;
+}
+
+==================================================
+
+// Contract 13
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger data: Bytes<32>;
+export ledger data_hash: Bytes<32>;
+export ledger is_valid: Field;
+
+export circuit store_with_validation(input: Bytes<32>, expected_hash: Bytes<32>): [] {
+  const computed_hash: Bytes<32> = persistent_hash<Bytes<32>>(input);
+  if (computed_hash == expected_hash) {
+    data = input;
+    data_hash = computed_hash;
+    is_valid = 1;
+  } else {
+    is_valid = 0;
+  }
+}
+
+==================================================
+
+// Contract 14
+pragma language_version >= 0.14.0;
+
+module Crypto {
+  import CompactStandardLibrary;
+
+  export pure circuit hash_bytes(input: Bytes<32>): Bytes<32> {
+    return persistent_hash<Bytes<32>>(input);
+  }
+}
+
+==================================================
+
+// Contract 15
+pragma language_version >= 0.14.0;
+
+module KeyGen {
+  import CompactStandardLibrary;
+
+  export pure circuit generate_pubkey(private_key: Field): CurvePoint {
+    return ec_mul_generator(private_key);
+  }
+}
+
+==================================================
+
+// Contract 16
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger balance: Uint<64>;
+
+export circuit set(new_value: Uint<64>): [] {
+  balance = new_value;
+}
+
+==================================================
+
+// Contract 17
+pragma language_version >= 0.14.0;
+
+module KeyGen {
+  import CompactStandardLibrary;
+
+  export pure circuit generate_pubkey(private_key: Field): CurvePoint {
+    return ec_mul_generator(private_key);
+  }
+}
+
+==================================================
+
+// Contract 18
+pragma language_version >= 0.14.0;
+
+module Crypto {
+  import CompactStandardLibrary;
+
+  export pure circuit secure_hash(input: Bytes<32>, salt: Field): Bytes<32> {
+    if (salt > 0) {
+      const salted_input: Bytes<32> = persistent_hash<Field>(salt);
+      const combined: Bytes<32> = persistent_hash<Bytes<32>>(input);
+      return persistent_hash<Bytes<32>>(combined);
+    } else {
+      return persistent_hash<Bytes<32>>(input);
+    }
+  }
+}
+
+==================================================
+
+// Contract 19
+pragma language_version >= 0.14.0;
+
+module KeyGen {
+  import CompactStandardLibrary;
+
+  export pure circuit safe_generate_pubkey(private_key: Field, min_key: Field): CurvePoint {
+    if (private_key >= min_key) {
+      if (private_key > 0) {
+        return ec_mul_generator(private_key);
+      } else {
+        return ec_mul_generator(min_key);
+      }
+    } else {
+      return ec_mul_generator(min_key);
+    }
+  }
+}
+
+==================================================
+
+// Contract 20
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger counter: Uint<64>;
+
+export circuit increment(amount: Uint<64>): [] {
+  counter = amount;
+}
+
+==================================================
+
+// Contract 21
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger balance: Uint<64>;
+export ledger min_balance: Uint<64>;
+
+export circuit update_balance(new_value: Uint<64>, allow_negative: Field): [] {
+  if (allow_negative == 1) {
+    balance = new_value;
+  } else {
+    if (new_value >= min_balance) {
+      balance = new_value;
+    } else {
+      balance = min_balance;
+    }
+  }
+}
+
+==================================================
+
+// Contract 22
+pragma language_version >= 0.14.0;
+
+module Crypto {
+  import CompactStandardLibrary;
+
+  export pure circuit hash_bytes(input: Bytes<32>): Bytes<32> {
+    return persistent_hash<Bytes<32>>(input);
+  }
+}
+
+==================================================
+
+// Contract 23
+pragma language_version >= 0.14.0;
+
+module Crypto {
+  import CompactStandardLibrary;
+
+  export pure circuit secure_hash(input: Bytes<32>, salt: Field): Bytes<32> {
+    if (salt > 0) {
+      const salted_input: Bytes<32> = persistent_hash<Field>(salt);
+      const combined: Bytes<32> = persistent_hash<Bytes<32>>(input);
+      return persistent_hash<Bytes<32>>(combined);
+    } else {
+      return persistent_hash<Bytes<32>>(input);
+    }
+  }
+}
+
+==================================================
+
+// Contract 24
+pragma language_version >= 0.14.0;
+
+module Utils {
+  import CompactStandardLibrary;
+
+  export pure circuit uint_to_field(input: Uint<64>): Field {
+    const field_val: Field = input as Field;
+    return field_val;
+  }
+}
+
+==================================================
+
+// Contract 25
+pragma language_version >= 0.14.0;
+
+module Utils {
+  import CompactStandardLibrary;
+
+  export pure circuit uint_to_field(input: Uint<64>): Field {
+    const field_val: Field = input as Field;
+    return field_val;
+  }
+}
+
+==================================================
+
+// Contract 26
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger balance: Uint<64>;
+
+export circuit set(new_value: Uint<64>): [] {
+  balance = new_value;
+}
+
+==================================================
+
+// Contract 27
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger balance: Uint<64>;
+
+export circuit set(new_value: Uint<64>): [] {
+  balance = new_value;
+}
+
+==================================================
+
+// Contract 28
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger balance: Uint<64>;
+
+export circuit set(new_value: Uint<64>): [] {
+  balance = new_value;
+}
+
+==================================================
+
+// Contract 29
+pragma language_version >= 0.14.0;
+
+module Crypto {
+  import CompactStandardLibrary;
+
+  export pure circuit secure_hash(input: Bytes<32>, salt: Field): Bytes<32> {
+    if (salt > 0) {
+      const salted_input: Bytes<32> = persistent_hash<Field>(salt);
+      const combined: Bytes<32> = persistent_hash<Bytes<32>>(input);
+      return persistent_hash<Bytes<32>>(combined);
+    } else {
+      return persistent_hash<Bytes<32>>(input);
+    }
+  }
+}
+
+==================================================
+
+// Contract 30
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger counter: Uint<64>;
+
+export circuit increment(amount: Uint<64>): [] {
+  counter = amount;
+}
+
+==================================================
+
+// Contract 31
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger data: Bytes<32>;
+export ledger data_hash: Bytes<32>;
+export ledger is_valid: Field;
+
+export circuit store_with_validation(input: Bytes<32>, expected_hash: Bytes<32>): [] {
+  const computed_hash: Bytes<32> = persistent_hash<Bytes<32>>(input);
+  if (computed_hash == expected_hash) {
+    data = input;
+    data_hash = computed_hash;
+    is_valid = 1;
+  } else {
+    is_valid = 0;
+  }
+}
+
+==================================================
+
+// Contract 32
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger data: Bytes<32>;
+
+export circuit update(input: Bytes<32>): [] {
+  data = input;
+}
+
+==================================================
+
+// Contract 33
+pragma language_version >= 0.14.0;
+
+module Crypto {
+  import CompactStandardLibrary;
+
+  export pure circuit secure_hash(input: Bytes<32>, salt: Field): Bytes<32> {
+    if (salt > 0) {
+      const salted_input: Bytes<32> = persistent_hash<Field>(salt);
+      const combined: Bytes<32> = persistent_hash<Bytes<32>>(input);
+      return persistent_hash<Bytes<32>>(combined);
+    } else {
+      return persistent_hash<Bytes<32>>(input);
+    }
+  }
+}
+
+==================================================
+
+// Contract 34
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger data: Bytes<32>;
+export ledger data_hash: Bytes<32>;
+export ledger is_valid: Field;
+
+export circuit store_with_validation(input: Bytes<32>, expected_hash: Bytes<32>): [] {
+  const computed_hash: Bytes<32> = persistent_hash<Bytes<32>>(input);
+  if (computed_hash == expected_hash) {
+    data = input;
+    data_hash = computed_hash;
+    is_valid = 1;
+  } else {
+    is_valid = 0;
+  }
+}
+
+==================================================
+
+// Contract 35
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger balance: Uint<64>;
+export ledger min_balance: Uint<64>;
+
+export circuit update_balance(new_value: Uint<64>, allow_negative: Field): [] {
+  if (allow_negative == 1) {
+    balance = new_value;
+  } else {
+    if (new_value >= min_balance) {
+      balance = new_value;
+    } else {
+      balance = min_balance;
+    }
+  }
+}
+
+==================================================
+
+// Contract 36
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger counter: Uint<64>;
+
+export circuit increment(amount: Uint<64>): [] {
+  counter = amount;
+}
+
+==================================================
+
+// Contract 37
+pragma language_version >= 0.14.0;
+
+module Utils {
+  import CompactStandardLibrary;
+
+  export pure circuit uint_to_field(input: Uint<64>): Field {
+    const field_val: Field = input as Field;
+    return field_val;
+  }
+}
+
+==================================================
+
+// Contract 38
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger data: Bytes<32>;
+export ledger data_hash: Bytes<32>;
+export ledger is_valid: Field;
+
+export circuit store_with_validation(input: Bytes<32>, expected_hash: Bytes<32>): [] {
+  const computed_hash: Bytes<32> = persistent_hash<Bytes<32>>(input);
+  if (computed_hash == expected_hash) {
+    data = input;
+    data_hash = computed_hash;
+    is_valid = 1;
+  } else {
+    is_valid = 0;
+  }
+}
+
+==================================================
+
+// Contract 39
+pragma language_version >= 0.14.0;
+
+module Utils {
+  import CompactStandardLibrary;
+
+  export pure circuit safe_uint_to_field(input: Uint<64>, max_val: Uint<64>): Field {
+    if (input <= max_val) {
+      if (input > 0) {
+        const field_val: Field = input as Field;
+        return field_val;
+      } else {
+        const default_val: Field = 1 as Field;
+        return default_val;
+      }
+    } else {
+      const capped_val: Field = max_val as Field;
+      return capped_val;
+    }
+  }
+}
+
+==================================================
+
+// Contract 40
+pragma language_version >= 0.14.0;
+
+module Utils {
+  import CompactStandardLibrary;
+
+  export pure circuit uint_to_field(input: Uint<64>): Field {
+    const field_val: Field = input as Field;
+    return field_val;
+  }
+}
+
+==================================================
+
+// Contract 41
+pragma language_version >= 0.14.0;
+
+module Crypto {
+  import CompactStandardLibrary;
+
+  export pure circuit secure_hash(input: Bytes<32>, salt: Field): Bytes<32> {
+    if (salt > 0) {
+      const salted_input: Bytes<32> = persistent_hash<Field>(salt);
+      const combined: Bytes<32> = persistent_hash<Bytes<32>>(input);
+      return persistent_hash<Bytes<32>>(combined);
+    } else {
+      return persistent_hash<Bytes<32>>(input);
+    }
+  }
+}
+
+==================================================
+
+// Contract 42
+pragma language_version >= 0.14.0;
+
+module Utils {
+  import CompactStandardLibrary;
+
+  export pure circuit uint_to_field(input: Uint<64>): Field {
+    const field_val: Field = input as Field;
+    return field_val;
+  }
+}
+
+==================================================
+
+// Contract 43
+pragma language_version >= 0.14.0;
+
+module Crypto {
+  import CompactStandardLibrary;
+
+  export pure circuit hash_bytes(input: Bytes<32>): Bytes<32> {
+    return persistent_hash<Bytes<32>>(input);
+  }
+}
+
+==================================================
+
+// Contract 44
+pragma language_version >= 0.14.0;
+
+module Utils {
+  import CompactStandardLibrary;
+
+  export pure circuit safe_uint_to_field(input: Uint<64>, max_val: Uint<64>): Field {
+    if (input <= max_val) {
+      if (input > 0) {
+        const field_val: Field = input as Field;
+        return field_val;
+      } else {
+        const default_val: Field = 1 as Field;
+        return default_val;
+      }
+    } else {
+      const capped_val: Field = max_val as Field;
+      return capped_val;
+    }
+  }
+}
+
+==================================================
+
+// Contract 45
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger data: Bytes<32>;
+
+export circuit update(input: Bytes<32>): [] {
+  data = input;
+}
+
+==================================================
+
+// Contract 46
+pragma language_version >= 0.14.0;
+
+module KeyGen {
+  import CompactStandardLibrary;
+
+  export pure circuit generate_pubkey(private_key: Field): CurvePoint {
+    return ec_mul_generator(private_key);
+  }
+}
+
+==================================================
+
+// Contract 47
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger counter: Uint<64>;
+
+export circuit increment(amount: Uint<64>): [] {
+  counter = amount;
+}
+
+==================================================
+
+// Contract 48
+pragma language_version >= 0.14.0;
+
+module KeyGen {
+  import CompactStandardLibrary;
+
+  export pure circuit generate_pubkey(private_key: Field): CurvePoint {
+    return ec_mul_generator(private_key);
+  }
+}
+
+==================================================
+
+// Contract 49
+pragma language_version >= 0.14.0;
+
+import CompactStandardLibrary;
+export { CurvePoint }
+
+export ledger counter: Uint<64>;
+
+export circuit increment(amount: Uint<64>): [] {
+  counter = amount;
+}
+
+==================================================
+
+// Contract 50
+pragma language_version >= 0.14.0;
+
+module Crypto {
+  import CompactStandardLibrary;
+
+  export pure circuit secure_hash(input: Bytes<32>, salt: Field): Bytes<32> {
+    if (salt > 0) {
+      const salted_input: Bytes<32> = persistent_hash<Field>(salt);
+      const combined: Bytes<32> = persistent_hash<Bytes<32>>(input);
+      return persistent_hash<Bytes<32>>(combined);
+    } else {
+      return persistent_hash<Bytes<32>>(input);
+    }
+  }
+}
+
+==================================================
+
