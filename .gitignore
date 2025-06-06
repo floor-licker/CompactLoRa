@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp_*/
+tmp_*/
+
+# Test and debug files
+test_*.compact
+debug*.compact
+*_test.compact
+*_debug.compact
+
+# Generated contract outputs (examples)
+my_*.compact
+example_*.compact
+sample_*.compact
+showcase_*.compact
+complex_*.compact
+
+# Model training artifacts
+models/*/checkpoint-*/
+models/*/runs/
+*.log
+*.out
+
+# Data cache and temporary datasets
+data/*_cache/
+data/temp_*/
+data/*_tmp/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environment variables
+.env
+.env.local
+
+# Compiled Compact outputs
+*.compact.out
+output_*/ 
