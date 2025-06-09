@@ -23,6 +23,7 @@ import json
 from typing import List, Dict, Tuple
 from dataclasses import dataclass
 import random
+from torch.utils.tensorboard import SummaryWriter
 
 
 @dataclass
@@ -113,7 +114,7 @@ class RLLoRATrainer:
     """Reinforcement Learning trainer using LoRA for complexity optimization."""
     
     def __init__(self, 
-                 base_model_name: str = "deepseek-ai/deepseek-coder-6.7b-base",
+                 base_model_name: str = "deepseek-ai/deepseek-coder-1.3b-base",  # Smaller for CPU
                  lora_rank: int = 16,
                  lora_alpha: int = 32,
                  complexity_threshold: int = 3):
@@ -121,8 +122,14 @@ class RLLoRATrainer:
         self.base_model_name = base_model_name
         self.complexity_threshold = complexity_threshold
         
+        # Initialize TensorBoard logging
+        self.writer = SummaryWriter('runs/compact_lora_training')
+        print("📊 TensorBoard logging enabled - run: tensorboard --logdir=runs")
+        
         # Load tokenizer and model
         print(f"🔄 Loading DeepSeek Coder model: {base_model_name}")
+        print("💡 Using CPU-optimized smaller model for better performance")
+        
         self.tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=True)
         
         # Set pad token if not present
@@ -132,17 +139,18 @@ class RLLoRATrainer:
         self.base_model = AutoModelForCausalLM.from_pretrained(
             base_model_name, 
             trust_remote_code=True,
-            torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
-            device_map="auto" if torch.cuda.is_available() else None
+            torch_dtype=torch.float32,  # Use float32 for CPU
+            device_map=None,  # CPU only
+            low_cpu_mem_usage=True
         )
         
-        # Configure LoRA for DeepSeek Coder
+        # Configure LoRA for DeepSeek Coder architecture
         self.lora_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
             r=lora_rank,
             lora_alpha=lora_alpha,
             lora_dropout=0.1,
-            target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]  # DeepSeek Coder specific
+            target_modules=["q_proj", "k_proj", "v_proj", "o_proj"]  # Core attention modules for stability
         )
         
         # Apply LoRA to model
@@ -193,8 +201,8 @@ class RLLoRATrainer:
         inputs = self.tokenizer.encode(prompt, return_tensors="pt")
         
         # Move to same device as model
-        if torch.cuda.is_available():
-            inputs = inputs.to(self.model.device)
+        device = next(self.model.parameters()).device
+        inputs = inputs.to(device)
         
         # Generation parameters optimized for code
         with torch.no_grad():
@@ -246,10 +254,97 @@ class RLLoRATrainer:
         
         return experiences
     
+    def fine_tune_on_examples(self, examples: list[str]):
+        """Fine-tune on high-quality examples first (supervised learning)."""
+        print(f"🎓 Fine-tuning on {len(examples)} high-quality examples...")
+        
+        from transformers import Trainer, TrainingArguments
+        from torch.utils.data import Dataset
+        
+        class CompactDataset(Dataset):
+            def __init__(self, texts, tokenizer):
+                self.texts = texts
+                self.tokenizer = tokenizer
+                
+            def __len__(self):
+                return len(self.texts)
+            
+            def __getitem__(self, idx):
+                text = self.texts[idx]
+                encoding = self.tokenizer(
+                    text,
+                    truncation=True,
+                    padding='max_length',
+                    max_length=512,
+                    return_tensors='pt'
+                )
+                return {
+                    'input_ids': encoding['input_ids'].squeeze(),
+                    'attention_mask': encoding['attention_mask'].squeeze(),
+                    'labels': encoding['input_ids'].squeeze()
+                }
+        
+        # Create dataset
+        dataset = CompactDataset(examples, self.tokenizer)
+        
+        # Training arguments with TensorBoard logging
+        training_args = TrainingArguments(
+            output_dir='./tmp_training',
+            num_train_epochs=2,
+            per_device_train_batch_size=2,
+            logging_steps=10,
+            save_steps=500,
+            logging_dir='runs/compact_lora_training',  # Log to same TensorBoard dir
+            report_to="tensorboard",  # Enable TensorBoard logging
+            logging_strategy="steps",
+        )
+        
+        # Create trainer
+        trainer = Trainer(
+            model=self.model,
+            args=training_args,
+            train_dataset=dataset,
+        )
+        
+        # Train with TensorBoard logging
+        print("📊 Fine-tuning metrics will appear in TensorBoard...")
+        
+        # Add immediate test data to verify TensorBoard works
+        for i in range(3):
+            self.writer.add_scalar('fine_tuning/test_connection', i * 0.5, i)
+        self.writer.flush()
+        print("📊 Added test data to TensorBoard - check dashboard!")
+        
+        # Add custom logging callback for guaranteed TensorBoard output
+        from transformers import TrainerCallback
+        class TensorBoardCallback(TrainerCallback):
+            def __init__(self, writer):
+                self.writer = writer
+                self.step = 0
+            
+            def on_log(self, args, state, control, logs=None, **kwargs):
+                if logs:
+                    self.step += 1
+                    for key, value in logs.items():
+                        if isinstance(value, (int, float)):
+                            self.writer.add_scalar(f'fine_tuning/{key}', value, self.step)
+                            print(f"📊 Logged {key}: {value}")
+                    self.writer.flush()
+        
+        # Add callback to trainer
+        callback = TensorBoardCallback(self.writer)
+        trainer.add_callback(callback)
+        
+        trainer.train()
+        
+        # Log fine-tuning completion
+        self.writer.add_text('Training_Phase/Fine_Tuning', f'Completed fine-tuning on {len(examples)} examples', 0)
+        print("✅ Fine-tuning complete!")
+
     def train_with_rl(self, 
                      num_iterations: int = 10,
                      samples_per_iteration: int = 32,
-                     save_path: str = "models/rl-lora-compact"):
+                     save_path: str = "models/deepseek-rl-complexity"):
         """Train model using reinforcement learning with LoRA."""
         
         print(f"🚀 Starting RL training for {num_iterations} iterations")
@@ -283,6 +378,20 @@ class RLLoRATrainer:
                 print(f"   • Average Complexity: {avg_complexity:.1f}")
                 print(f"   • Positive Examples: {len(positive_experiences)}")
                 
+                # Log to TensorBoard
+                self.writer.add_scalar('RL_Training/average_reward', avg_reward, iteration)
+                self.writer.add_scalar('RL_Training/success_rate', success_rate, iteration)
+                self.writer.add_scalar('RL_Training/average_complexity', avg_complexity, iteration)
+                self.writer.add_scalar('RL_Training/positive_examples', len(positive_experiences), iteration)
+                self.writer.flush()  # Ensure data is written immediately
+                
+                # Log sample generated code
+                if positive_experiences:
+                    sample_code = positive_experiences[0]['generated_code']
+                    self.writer.add_text('Generated_Samples/Best_Contract', sample_code, iteration)
+                    print(f"📝 Logged sample contract to TensorBoard")
+                self.writer.flush()
+                
                 # Save best model
                 if avg_reward > best_avg_reward:
                     best_avg_reward = avg_reward
@@ -296,6 +405,10 @@ class RLLoRATrainer:
         self.save_model(save_path)
         print(f"\n✅ Training completed! Final model saved to {save_path}")
         print(f"🏆 Best average reward achieved: {best_avg_reward:.3f}")
+        
+        # Close TensorBoard writer
+        self.writer.close()
+        print("📊 TensorBoard logs saved to runs/compact_lora_training")
     
     def _fine_tune_on_examples(self, training_texts: List[str]):
         """Fine-tune LoRA weights on positive examples."""
@@ -371,8 +484,11 @@ def main():
     print("🎯 Goal: Generate contracts with complexity > 3 that compile")
     print("⚡ Method: Reinforcement Learning + LoRA fine-tuning")
     
-    # Initialize trainer
-    trainer = RLLoRATrainer(complexity_threshold=3)
+    # Initialize trainer with DeepSeek Coder
+    trainer = RLLoRATrainer(
+        base_model_name="deepseek-ai/deepseek-coder-1.3b-base",
+        complexity_threshold=3
+    )
     
     # Evaluate baseline
     print("\n📊 BASELINE EVALUATION")
@@ -383,7 +499,7 @@ def main():
     trainer.train_with_rl(
         num_iterations=5,
         samples_per_iteration=16,
-        save_path="models/rl-lora-complexity"
+        save_path="models/deepseek-rl-complexity"
     )
     
     # Final evaluation
